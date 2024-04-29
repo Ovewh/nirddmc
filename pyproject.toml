@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "nirddmc"
+version = "0.1.1"
+description = "Tool for creating local intake esm catalogs of ESGF organized data"
+authors = ["Ove <ovehaugv@outlook.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+typer = "^0.12.3"
+intake-esm = "^2024.2.6"
+dask = "^2024.4.2"
+ecgtools = "^2023.7.13"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# Installing the CLI for building the intake catalog csv
+[tool.poetry.scripts]
+nirddmc = "nirddmc.main:app"
