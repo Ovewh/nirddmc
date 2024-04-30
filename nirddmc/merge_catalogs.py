@@ -3,7 +3,6 @@ import pandas as pd
 import intake
 from typing import List
 import intake_esm
-cmip_merger = typer.Typer()
 
 def _join_tables_from_filepath(filepaths: List[str]):
     dfs = [pd.read_csv(filepath) for filepath in filepaths]
@@ -17,7 +16,6 @@ def _join_tables_from_intake_urls(urls: List[str]):
     return df
 
 
-@cmip_merger.command(help='Merge a list of cmip catalogs')
 def merge_cmip_catalogs(catalogs: List[str] = typer.Option(..., "--catalogs","-c", help='List of catalogs to merge'),
         name: str = typer.Option('merge_cmip', help='what to name the merged catalog'),
         outdir: str = typer.Option('./', help='Directory to save the merged catalog'),

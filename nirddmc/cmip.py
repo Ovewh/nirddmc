@@ -4,9 +4,6 @@ from ecgtools import Builder
 from ecgtools.parsers.cmip import  parse_cmip6_using_directories, parse_cmip5_using_directories
 from typing import List
 
-
-app_cmip = typer.Typer()
-@app_cmip.command(help='Build a catalog of CMIP data assets')
 def cmip(root_paths: List[str] = typer.Option(..., "--root-paths","-rp", 
                                     help='Root path of the CMIP project output.'),
         depth: int = typer.Option(4, help='Recursion depth. Recursively walk root_path to a specified depth'),
