@@ -93,8 +93,8 @@ def cesm_ppe(
     aggregations.append(
         Aggregation(
             attribute_name= "ensemble",
-            type= "join_new",
-            options={ "coords": "minimal", "compat": "override" }
+            type= "join_existing",
+            options={"dim": "ensamble", "coords": "minimal", "compat": "override" }
         )
     )
     groupby_attrs=[
