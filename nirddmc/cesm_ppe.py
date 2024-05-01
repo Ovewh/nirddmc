@@ -1,32 +1,37 @@
-import intake
-import xarray as xr
-import cf_xarray
 import pathlib
-from ecgtools.parsers.utilities import extract_attr_with_regex
+from typing import List
+
+import cf_xarray
+import intake
+import typer
+import xarray as xr
+from ecgtools import Builder
 from ecgtools.builder import INVALID_ASSET, TRACEBACK
+from intake_esm.cat import Aggregation
 
 
 # Parse CESM PPE file output and return info for creating intake catalog
-def parse_cesm_ppe(str: file, dict: xarray_open_kwargs=None) -> dict:
+def parse_cesm_ppe(file: str, xarray_open_kwargs: dict=None) -> dict:
     # Extract attributes from file path
     _default_kwargs = {'engine': 'netcdf4', 'chunks': {}, 'decode_times': True}
-    if xarray_open_kwargs:
-        xarray_open_kwargs.update(_default_kwargs)
-    else:
-        xarray_open_kwargs = _default_kwargs
-    experiment_stream = {
-        'PD': 'present-day',
-        'PI': 'pre-industrial'
-    }
-    frequency_stream = {
-        'h0': 'monthly',
-        'h1': 'daily',
-    }
-
-    file = pathlib.Path(file)
-    info = {}
-
     try:
+        if xarray_open_kwargs:
+            xarray_open_kwargs.update(_default_kwargs)
+        else:
+            xarray_open_kwargs = _default_kwargs
+        experiment_stream = {
+            'PD': 'present-day',
+            'PI': 'pre-industrial'
+        }
+        frequency_stream = {
+            'h0': 'monthly',
+            'h1': 'daily',
+        }
+
+        file = pathlib.Path(file)
+        info = {}
+
+
         #filename cc_PPE_250_ensemble_PD.131.h0.IWC.nc
         filename = file.name
         filename_parts = file.stem.split('_')[-1].split('.')
@@ -51,47 +56,69 @@ def parse_cesm_ppe(str: file, dict: xarray_open_kwargs=None) -> dict:
                 pass
         info['path'] = str(file)
         return info
+    except Exception as e:
+        return {INVALID_ASSET: file, TRACEBACK: str(e)}
 
-    except Exception:
-        return {INVALID_ASSET: file, TRACEBACK: traceback.format_exc()}
 
 # Build CESM PPE intake catalog using the parser function
 
-def cesm_ppe(root_paths: List[str] = typer.Option(..., "--root-paths","-rp", help='Root path of the CESM PPE project output.'),
-        depth: int = typer.Option(4, help='Recursion depth. Recursively walk root_path to a specified depth'),
-        csv_filepath: str = typer.Option(default=None, help='File path to use when saving the built catalog'),
-        exclude_patterns: List[str] = typer.Option(
-            default=['*/parameter_262_w_control.nc'],
-            help='List of patterns to exclude in the cataloge build'),
-        config_filepath: str = typer.Option(None, help='Yaml file to configure build arguments'),
-        nthreads: int = typer.Option(1, help='Number of threads to use when building the catalog'),
-        compression: bool = typer.Option(False, help='Whether to compress the output csv file')):
-    if config_filepath:
-        with open(config_filepath, 'r') as file:
-            config = yaml.safe_load(file)
-            root_path = config.get('root_path', root_path)
-            depth = config.get('depth', depth)
-            csv_filepath = config.get('csv_filepath', csv_filepath)
-            exclude_patterns = config.get('exclude_patterns', exclude_patterns)
-
-    if csv_filepath is None:
-        raise ValueError("Please provide csv-filepath. e.g.: './cesm_ppe.csv.gz'")
-
+def cesm_ppe(
+    root_path: List[str] = typer.Option(..., "--root-path", "-rp", help='Root path to the directory containing the CESM PPE files'),
+    depth: int = typer.Option(2, help='Recursion depth. Recursively walk root_path to a specified depth'),
+    filename: str = typer.Option(...,"--file-name","-fn",help='Name to use when saving the built catalog'),
+    nthreads: int = typer.Option(2, help='Number of threads to use when building the catalog'),
+    compression: bool = typer.Option(False, help='Whether to compress the output csv file'),
+    directory: str = typer.Option('./', "--dir", "--directory", help='Where to store created intake catalog'),
+    description: str = typer.Option(None, help='Detailed multi-line description to fully explain the collection')):
+    
     builder = Builder(
-        paths=root_paths,
+        paths=root_path,
         depth=depth,
-        exclude_patterns=exclude_patterns,
+        
         joblib_parallel_kwargs={'n_jobs': nthreads, 'verbose':13},
     )
-
     builder.build(parsing_func=parse_cesm_ppe)
-
     builder.clean_dataframe()
 
-    df = builder.df
-    if compression:
-        df.to_csv(csv_filepath, compression='gzip', index=False)
-    else:
-        df.to_csv(csv_filepath, index=False)
+    aggregations = [Aggregation(attribute_name="variable", type = "union")]
 
-    return df
+    aggregations.append(
+        Aggregation(
+            attribute_name="time_range",
+            type="join_existing",
+            options={ "dim": "time", "coords": "minimal", "compat": "override" }
+        )
+    )
+
+    aggregations.append(
+        Aggregation(
+            attribute_name= "ensemble",
+            type= "join_new",
+            options={ "coords": "minimal", "compat": "override" }
+        )
+    )
+    groupby_attrs=[
+        "experiment",
+        "frequency",
+        "ensemble"
+    ]
+
+    if compression:
+        builder.save(name=filename, data_format='netcdf', 
+                     path_column_name ='path',
+                     variable_column_name='variable', 
+                     to_csv_kwargs=dict(compression='gzip',index=False),
+                     catalog_type='file',
+                     description=description,
+                        directory=directory,
+                     aggregations=aggregations,
+                     groupby_attrs=groupby_attrs)
+    else:
+        builder.save(name=filename, data_format='netcdf', 
+                     path_column_name ='path',
+                     variable_column_name='variable', 
+                     catalog_type='file',
+                     description=description,
+                     directory=directory,
+                     aggregations=aggregations,
+                     groupby_attrs=groupby_attrs)
