@@ -1,9 +1,12 @@
+from typing import List
+
 import typer
 import yaml
 from ecgtools import Builder
-from ecgtools.parsers.cmip import parse_cmip6_using_directories, parse_cmip5_using_directories
-from typing import List
+from ecgtools.parsers.cmip import (parse_cmip5_using_directories,
+                                   parse_cmip6_using_directories)
 from intake_esm.cat import Aggregation
+
 
 def cmip(root_paths: List[str] = typer.Option(..., "--root-paths","-rp", 
                                     help='Root path of the CMIP project output.'),
