@@ -7,6 +7,13 @@ from ecgtools.parsers.cmip import (parse_cmip5_using_directories,
                                    parse_cmip6_using_directories)
 from intake_esm.cat import Aggregation
 
+def pick_latest_version(df):
+    version_orr = df['version']..copy()
+    df['version'] = df['version'].str[1:].astype(int) 
+    grouper = df.groupby(['activity_id', 'institution_id', 'source_id', 'experiment_id', 'member_id', 'table_id', 'variable_id', 'time_range'])
+    idx = grouper['version'].idxmax()
+    df['version'] = version_orr
+    return df.loc[idx]
 
 def cmip(root_paths: List[str] = typer.Option(..., "--root-paths","-rp", 
                                     help='Root path of the CMIP project output.'),
@@ -45,9 +52,15 @@ def cmip(root_paths: List[str] = typer.Option(..., "--root-paths","-rp",
     )
 
     if cmip_version == 5:
-        builder.build(parsing_func=parse_cmip5_using_directories)    
+        if pick_latest_version:
+            builder.build(parsing_func=parse_cmip5_using_directories,postprocess_func=pick_latest_version)    
+        else:
+            builder.build(parsing_func=parse_cmip5_using_directories)
     elif cmip_version == 6:
-        builder.build(parsing_func=parse_cmip6_using_directories)
+        if pick_latest_version:
+            builder.build(parsing_func=parse_cmip6_using_directories,postprocess_func=pick_latest_version)
+        else:
+            builder.build(parsing_func=parse_cmip6_using_directories)
     
     builder.clean_dataframe()
 
