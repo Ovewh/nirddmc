@@ -92,8 +92,12 @@ def merge_cmip_catalogs(catalogs: List[str] = typer.Option(..., "--catalogs","-c
     aggregation_control=dict(
     variable_column_name="variable_id",
     groupby_attrs=[
-        "activity_id",
-        "institution_id"
+      "activity_id",
+      "institution_id",
+      "source_id",
+      "experiment_id",
+      "table_id",
+      "grid_label"
     ]
     )
 
@@ -118,6 +122,14 @@ def merge_cmip_catalogs(catalogs: List[str] = typer.Option(..., "--catalogs","-c
             options={ "coords": "minimal", "compat": "override" }
         )
     )
+    aggregation_control["aggregations"].append(
+        Aggregation(
+            attribute_name= "dcpp_init_year",
+            type= "join_new",
+            options={ "coords": "minimal", "compat": "override" }
+        )
+    )
+
     merge_catalogs["last_updated"]=last_update
     merge_catalogs["aggregation_control"]=aggregation_control
     esm_merged = intake.open_esm_datastore({'esmcat':merge_catalogs, 'df': merged_tab})

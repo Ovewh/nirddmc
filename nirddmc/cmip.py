@@ -8,7 +8,7 @@ from ecgtools.parsers.cmip import (parse_cmip5_using_directories,
 from intake_esm.cat import Aggregation
 
 def pick_latest_version(df):
-    version_orr = df['version']..copy()
+    version_orr = df['version'].copy()
     df['version'] = df['version'].str[1:].astype(int) 
     grouper = df.groupby(['activity_id', 'institution_id', 'source_id', 'experiment_id', 'member_id', 'table_id', 'variable_id', 'time_range'])
     idx = grouper['version'].idxmax()
@@ -82,8 +82,12 @@ def cmip(root_paths: List[str] = typer.Option(..., "--root-paths","-rp",
         )
     )
     groupby_attrs=[
-        "activity_id",
-        "institution_id"
+      "activity_id",
+      "institution_id",
+      "source_id",
+      "experiment_id",
+      "table_id",
+      "grid_label"
     ]
 
     
