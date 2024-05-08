@@ -93,14 +93,13 @@ def cesm_ppe(
     aggregations.append(
         Aggregation(
             attribute_name= "ensemble",
-            type= "join_existing",
+            type= "join_new",
             options={"dim": "ensamble", "coords": "minimal", "compat": "override" }
         )
     )
     groupby_attrs=[
         "experiment",
         "frequency",
-        "ensemble"
     ]
 
     if compression:
