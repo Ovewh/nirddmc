@@ -34,8 +34,8 @@ def parse_cesm_ppe(file: str, xarray_open_kwargs: dict=None) -> dict:
 
         #filename cc_PPE_250_ensemble_PD.131.h0.IWC.nc
         filename = file.name
-        filename_parts = file.stem.split('_')[-1].split('.')
-        info['experiment'] = experiment_stream.get(filename_parts[0], filename_parts[0].lower)
+        filename_parts = file.stem.split('.')
+        info['experiment'] = experiment_stream.get(filename_parts[0].split('_')[-1], filename_parts[0].split('_')[-1].lower)
         info['ensemble'] = int(filename_parts[1])
         info['frequency'] = frequency_stream.get(filename_parts[2], filename_parts[2])
         info['variable'] = filename_parts[3]
