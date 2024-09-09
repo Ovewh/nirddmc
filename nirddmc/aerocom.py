@@ -20,11 +20,11 @@ def aerocom_parser(file: str) -> dict:
             'histSST' : 'histSST',
             'spt' : 'histSST-dust-spt',
         }
+        path_parts = file.split('/')
         file = pathlib.Path(file)
         filename = file.name
         info = {}
         filename_parts = filename.split('_')
-        path_parts = file.split('/')
         info['experiment'] = experiment_stream.get(path_parts[-3], path_parts[-3])
         info['model'] = path_parts[-2].split('_')[0]
         info['variable'] = filename_parts[-4]
@@ -33,11 +33,12 @@ def aerocom_parser(file: str) -> dict:
         info['time'] = filename_parts[-2]
         info['path'] = str(file)
         return info
+    
     except Exception as e:
         return {INVALID_ASSET: file, TRACEBACK: str(e)}
     
 def aerocom(
-    root_path: List[str] = typer.Argument(...,"-rp", help="Root paths to the directory containing the Aerocom data to be parsed"),
+    root_path: List[str] = typer.Argument(..., help="Root paths to the directory containing the Aerocom data to be parsed"),
     depth: int = typer.Option(2,"--depth", '-d', help="Depth of the directory tree to be parsed"),
     nthreads: int = typer.Option(2, "--nthreads", "-nt", help="Number of threads to use for parsing"),
     compression: bool = typer.Option(False, "--compression", "-c", help="Whether to compress the output csv file"),
@@ -51,11 +52,14 @@ def aerocom(
     )
     builder.build(parsing_func=aerocom_parser)
     builder.clean_dataframe()
+    print(builder.invalid_assets)
 
     aggregations = [Aggregation(attribute_name="variable", type="union")]
     aggregations.append(
-        Aggregation(attribude_name="time", type="join_existing", 
-                    options={"dim": "time", "coords": "minimal", "compat": "override"})
+        Aggregation(attribute_name="time", 
+                    type="join_existing", 
+                    options={"dim": "time", "coords": "minimal", "compat": "override"}
+                    )
     )
     groupby_attrs=[
         "experiment",
@@ -63,7 +67,7 @@ def aerocom(
         "model",
         "coordinate"
     ]
-
+    
     if compression:
         builder.save(name=catalog_name, data_format='netcdf', 
                      path_column_name='path',
