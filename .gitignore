@@ -49,7 +49,4 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
-nirddmc/.ipynb_checkpoints/
-nirddmc/__pycache__/
-nirddmc/.ipynb_checkpoints/
 .ipynb_checkpoints/
