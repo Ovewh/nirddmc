@@ -43,11 +43,13 @@ def aerocom(
     nthreads: int = typer.Option(2, "--nthreads", "-nt", help="Number of threads to use for parsing"),
     compression: bool = typer.Option(False, "--compression", "-c", help="Whether to compress the output csv file"),
     directory: str = typer.Option('./', "--dir", "--directory", help="Where to store the created intake catalog"),
-    catalog_name: str = typer.Option('aerocom', "--catalog-name", "-cn", help="Name to use when saving the built catalog")):
+    catalog_name: str = typer.Option('aerocom', "--catalog-name", "-cn", help="Name to use when saving the built catalog"),
+    exclude_patterns: List[str] = typer.Option(default=['*/.raw/*'],help="List of patterns to exclude in the catalog build")):
 
     builder = Builder(
         paths=root_path,
         depth=depth,
+        exclude_patterns=exclude_patterns,
         joblib_parallel_kwargs={'n_jobs': nthreads, 'verbose': 13}
     )
     builder.build(parsing_func=aerocom_parser)
